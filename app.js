@@ -1,6 +1,6 @@
 /* ============================================================
-   СПИНА: КВЕСТ v2 — логика приложения
-   Контент (миссии, достижения, герои) — в data.js
+   СПИНА: КВЕСТ v2.1 — логика приложения
+   Контент (миссии, достижения, реплики Рико) — в data.js
    ============================================================ */
 'use strict';
 
@@ -36,7 +36,6 @@ function loadState() {
     s = defaultState();
     migrateLegacy(s);
   }
-  // на случай новых полей в будущих версиях
   s.settings = Object.assign(defaultState().settings, s.settings || {});
   s.sessions = s.sessions || [];
   s.achievements = s.achievements || {};
@@ -79,6 +78,8 @@ function lessonSec(l) { return l.exercises.reduce((a, e) => a + e.sec, 0); }
 function lessonMinutes(l) { return Math.ceil((lessonSec(l) + l.exercises.length * 8) / 60); }
 function lessonIndex(id) { return LESSONS.findIndex(l => l.id === id); }
 function plural(n, one, few, many) { const m = n % 10, h = n % 100; if (m === 1 && h !== 11) return one; if (m >= 2 && m <= 4 && (h < 12 || h > 14)) return few; return many; }
+function childName() { return state.profile && state.profile.name ? state.profile.name : 'герой'; }
+function ricoLine(key) { return pick(RICO[key] || ['']).replace('{name}', childName()); }
 
 let toastTimer = null;
 function toast(msg, ms = 2400) {
@@ -103,17 +104,14 @@ function streakInfo() {
   const days = [...new Set(state.sessions.map(s => s.date))].sort();
   if (!days.length) return { current: 0, best: 0 };
   const dayNum = d => Math.round(new Date(d + 'T00:00:00').getTime() / 86400000);
-  // лучшая серия
   let best = 1, run = 1;
   for (let i = 1; i < days.length; i++) {
     run = dayNum(days[i]) - dayNum(days[i - 1]) === 1 ? run + 1 : 1;
     best = Math.max(best, run);
   }
-  // текущая серия: считаем от сегодня (или от вчера, если сегодня ещё не занимались)
   const set = new Set(days);
-  const today = todayStr();
   let cursor = new Date();
-  if (!set.has(today)) cursor.setDate(cursor.getDate() - 1);
+  if (!set.has(todayStr())) cursor.setDate(cursor.getDate() - 1);
   let current = 0;
   while (set.has(localDate(cursor))) { current++; cursor.setDate(cursor.getDate() - 1); }
   return { current, best: Math.max(best, current) };
@@ -138,14 +136,12 @@ function todayMission() {
   let idx = LESSONS.findIndex(l => !best[l.id]);
   let label = 'Сегодняшняя миссия';
   if (idx === -1) {
-    // все пройдены: повторяем самую «слабую», при равенстве — по дню года
     let min = 4; LESSONS.forEach(l => { min = Math.min(min, best[l.id]); });
     const weak = LESSONS.map((l, i) => i).filter(i => best[LESSONS[i].id] === min);
     const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
     idx = weak[doy % weak.length];
     label = min < 3 ? 'Повторение: доберём звёзды' : 'Повторение для мастера';
   }
-  if (doneToday) label = 'Сегодня уже есть занятие! Ещё одно?';
   return { idx, label, doneToday };
 }
 
@@ -156,14 +152,12 @@ function summaryForAchievements(lastSession) {
   const repeats = {};
   state.sessions.forEach(s => { repeats[s.lessonId] = (repeats[s.lessonId] || 0) + 1; });
   return {
-    sessions: state.sessions,
-    completedIds: ids,
+    sessions: state.sessions, completedIds: ids,
     streak: st.current, bestStreak: st.best,
     totalStars: totalStars(),
     threeStar: Object.values(best).filter(v => v === 3).length,
     honest: state.sessions.filter(s => s.stopped).length,
-    minutes: totalMinutes(),
-    exercises: totalExercises(),
+    minutes: totalMinutes(), exercises: totalExercises(),
     hour: lastSession ? new Date(lastSession.at).getHours() : null,
     maxRepeat: Math.max(0, ...Object.values(repeats)),
   };
@@ -226,7 +220,7 @@ const speech = {
     return true;
   },
   say(text, { interrupt = true, rate = 0.95 } = {}) {
-    if (!state.settings.voice || !this.ready()) return;
+    if (!state.settings.voice || !this.ready() || !text) return;
     try {
       if (interrupt) speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
@@ -248,9 +242,9 @@ function vibrate(pattern) {
    Конфетти
    ------------------------------------------------------------ */
 function confetti(count = 140, duration = 2800) {
-  const c = $('#confetti'); const ctx = c.getContext('2d');
+  const c = $('#confetti'); if (!c) return; const ctx = c.getContext('2d');
   c.width = innerWidth; c.height = innerHeight;
-  const colors = ['#6c5ce7', '#ff7a59', '#00c9a7', '#ffc93c', '#4facfe', '#f368e0'];
+  const colors = ['#2f7be6', '#ffc531', '#2fc58a', '#1cb8d8', '#ff9f43', '#ffffff'];
   const parts = Array.from({ length: count }, () => ({
     x: Math.random() * c.width, y: -20 - Math.random() * c.height * 0.5,
     w: 6 + Math.random() * 8, h: 8 + Math.random() * 10,
@@ -274,7 +268,8 @@ function confetti(count = 140, duration = 2800) {
 }
 
 /* ------------------------------------------------------------
-   Анимированные фигурки (SVG + SMIL-морфинг между позами)
+   Анимированные схемы упражнений (SVG + SMIL-морфинг между позами)
+   Используются там, где ещё нет картинки демонстратора (POSE_IMAGES).
    ------------------------------------------------------------ */
 function poly(a, b, dur, cls = '') {
   const anim = b ? `<animate attributeName="points" values="${a};${b};${a}" dur="${dur}s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/>` : '';
@@ -391,18 +386,25 @@ function figureSVG(visual, label) {
   return `<svg viewBox="0 0 300 200" role="img" aria-label="${esc(label)}">${draw()}</svg><div class="demo-label">${esc(label)}</div>`;
 }
 
+// Демонстрация: картинка персонажа, если есть, иначе схема
+function demoMarkup(visual, label) {
+  const img = (typeof POSE_IMAGES !== 'undefined') && POSE_IMAGES[visual];
+  if (img) return `<img src="${img}" alt="${esc(label)}" class="${img.includes('/scenes/') ? 'scene' : 'pose'}"><div class="demo-label">${esc(label)}</div>`;
+  return figureSVG(visual, label);
+}
+
 /* ------------------------------------------------------------
-   Навигация между экранами
+   Навигация
    ------------------------------------------------------------ */
 function show(id) {
   $$('.view').forEach(v => { v.hidden = v.id !== id; });
-  window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  window.scrollTo(0, 0);
 }
+function setTab(name) { $$('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.nav === name)); }
 
 /* ------------------------------------------------------------
    Онбординг
    ------------------------------------------------------------ */
-let pickedHero = null;
 function renderOnboarding(step = 1) {
   show('onboardView');
   $$('.onboard-step').forEach(s => { s.hidden = s.dataset.step !== String(step); });
@@ -412,24 +414,16 @@ function renderOnboarding(step = 1) {
     $('#consentDoctor').onchange = upd; $('#consentAdult').onchange = upd; upd();
     $('#onboardNext1').onclick = () => renderOnboarding(2);
   } else {
-    const grid = $('#heroGrid'); grid.innerHTML = '';
-    pickedHero = state.profile ? state.profile.hero : null;
     $('#childName').value = state.profile ? state.profile.name : '';
-    HEROES.forEach(h => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'hero-pick' + (pickedHero === h.id ? ' active' : '');
-      b.innerHTML = `<span>${h.emoji}</span><small>${esc(h.name)}</small>`;
-      b.onclick = () => { pickedHero = h.id; $$('.hero-pick').forEach(x => x.classList.remove('active')); b.classList.add('active'); audio.tick(); upd(); };
-      grid.appendChild(b);
-    });
-    const upd = () => { $('#onboardStart').disabled = !(pickedHero && $('#childName').value.trim().length > 0); };
+    const upd = () => { $('#onboardStart').disabled = !($('#childName').value.trim().length > 0); };
     $('#childName').oninput = upd; upd();
     $('#onboardStart').onclick = () => {
       const name = $('#childName').value.trim().slice(0, 20);
-      state.profile = Object.assign({ createdAt: new Date().toISOString() }, state.profile || {}, { name, hero: pickedHero });
+      state.profile = Object.assign({ createdAt: new Date().toISOString() }, state.profile || {}, { name, hero: 'demo' });
       saveState(); audio.go();
       renderHome();
       toast(`Добро пожаловать, ${name}! 🎉`);
+      speech.say(`Привет, ${name}! Я Рико. Вперёд к первой миссии!`);
     };
   }
 }
@@ -437,34 +431,24 @@ function renderOnboarding(step = 1) {
 /* ------------------------------------------------------------
    Главная
    ------------------------------------------------------------ */
-function heroOf() { return HEROES.find(h => h.id === (state.profile && state.profile.hero)) || HEROES[0]; }
-
 function starsMarkup(n) {
   return '★★★'.split('').map((s, i) => `<span class="${i < n ? '' : 'off'}">★</span>`).join('');
 }
 
 function renderHome() {
-  show('homeView');
-  const hero = heroOf();
-  document.documentElement.style.setProperty('--figure', hero.color);
-  $('#heroAvatar').textContent = hero.emoji;
-  $('#heroName').textContent = state.profile ? state.profile.name : 'Герой';
+  show('homeView'); setTab('home');
+  $('#helloText').textContent = ricoLine('hello');
+  $('#soundBtn').textContent = state.settings.sound ? '🔊' : '🔇';
+
   const lv = levelInfo();
   $('#heroLevel').textContent = `${lv.level.icon} ${lv.level.title} · уровень ${lv.number}`;
   $('#xpBar').style.width = lv.pct + '%';
-  $('#xpText').textContent = lv.next ? `${state.xp} / ${lv.next.xp} опыта до уровня ${lv.number + 1}` : `${state.xp} опыта · максимальный уровень`;
-  $('#soundBtn').textContent = state.settings.sound ? '🔊' : '🔇';
+  $('#xpText').textContent = lv.next ? `${state.xp} / ${lv.next.xp} опыта` : `${state.xp} опыта · макс.`;
 
-  // сегодняшняя миссия
-  const tm = todayMission(); const l = LESSONS[tm.idx];
-  $('#todayLabel').textContent = tm.label;
-  $('#todayTitle').textContent = `${l.badge} Миссия ${tm.idx + 1}. ${l.title}`;
-  $('#todayMeta').textContent = `≈ ${lessonMinutes(l)} мин · ${l.exercises.length} ${plural(l.exercises.length, 'упражнение', 'упражнения', 'упражнений')}`;
-  $('#todayBtn').textContent = tm.doneToday ? '▶ Ещё одна миссия' : '▶ Начать миссию';
-  $('#todayBtn').onclick = () => openLesson(tm.idx);
   const st = streakInfo();
-  $('#streakNum').textContent = st.current;
-  $('#streakBadge').classList.toggle('hot', st.current >= 2);
+  $('#statsStars').textContent = totalStars();
+  $('#statsDone').textContent = `${completedIds().size}/${LESSONS.length}`;
+  $('#statsStreak').textContent = st.current;
 
   // неделя
   const days = new Set(state.sessions.map(s => s.date));
@@ -477,39 +461,58 @@ function renderHome() {
   }
   $('#weekStrip').innerHTML = html;
 
-  // статистика
-  $('#statsStars').textContent = totalStars();
-  $('#statsDone').textContent = completedIds().size;
-  $('#statsMinutes').textContent = totalMinutes();
+  // сегодняшняя миссия
+  const tm = todayMission(); const l = LESSONS[tm.idx];
+  $('#todayMeta').textContent = `${tm.doneToday ? 'Ещё одна · ' : ''}Миссия ${tm.idx + 1} · ≈ ${lessonMinutes(l)} мин`;
+  $('#todayBtn').onclick = () => openLesson(tm.idx);
 
-  // карта
+  // карта: змейка по 3 в ряд
   const best = bestStars();
   const map = $('#lessonMap'); map.innerHTML = '';
   LESSONS.forEach((les, i) => {
     const unlocked = isUnlocked(i); const stars = best[les.id] || 0;
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'lesson-card' + (unlocked ? '' : ' locked') + (i === tm.idx && unlocked ? ' next' : '') + (stars ? ' done' : '');
-    card.style.setProperty('--lc', les.color);
-    card.innerHTML = `<div class="lesson-num">${unlocked ? (stars ? '✓' : i + 1) : '🔒'}</div>
-      <div class="lesson-copy"><div class="lesson-title">${les.badge} ${esc(les.title)}</div>
-      <div class="lesson-meta">≈ ${lessonMinutes(les)} мин · ${les.exercises.length} ${plural(les.exercises.length, 'упражнение', 'упражнения', 'упражнений')}</div></div>
-      <div class="stars">${starsMarkup(stars)}</div>`;
-    card.onclick = () => {
-      if (!unlocked) { toast('Сначала пройди предыдущую миссию 🔒'); vibrate(40); return; }
+    const row = Math.floor(i / 3), col = i % 3;
+    const gcol = row % 2 === 0 ? col + 1 : 3 - col;
+    const node = document.createElement('button');
+    node.type = 'button';
+    node.className = 'node' + (unlocked ? '' : ' locked') + (i === tm.idx && unlocked ? ' current' : '') + (i === LESSONS.length - 1 && unlocked && i !== tm.idx ? ' final' : '');
+    node.style.gridRow = row + 1; node.style.gridColumn = gcol;
+    const inner = !unlocked ? `<b>${i + 1}</b>` : (i === tm.idx ? `<img src="assets/poses/boy-wave.webp" alt="">` : (i === LESSONS.length - 1 ? '🏆' : (stars ? '✓' : i + 1)));
+    node.innerHTML = `<div class="circle">${inner}</div><div class="nstars">${unlocked && stars ? starsMarkup(stars) : ''}</div><div class="nlabel">${i === tm.idx && unlocked ? `Миссия ${i + 1}` : `День ${i + 1}`}</div>`;
+    node.title = les.title;
+    node.onclick = () => {
+      if (!unlocked) { toast(ricoLine('locked') + ' 🔒'); vibrate(40); return; }
       openLesson(i);
     };
-    map.appendChild(card);
+    map.appendChild(node);
   });
+  requestAnimationFrame(drawMapPath);
 }
 
+function drawMapPath() {
+  const svg = $('#mapPath'), wrap = $('.map-wrap'); if (!svg || !wrap || $('#homeView').hidden) return;
+  const wr = wrap.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${wr.width} ${wr.height}`);
+  const pts = $$('#lessonMap .node .circle').map(c => { const r = c.getBoundingClientRect(); return [r.left - wr.left + r.width / 2, r.top - wr.top + r.height / 2]; });
+  if (pts.length < 2) return;
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    if (Math.abs(y1 - y0) < 4) d += ` L ${x1} ${y1}`;
+    else d += ` C ${x0} ${y0 + (y1 - y0) * 0.6}, ${x1} ${y0 + (y1 - y0) * 0.4}, ${x1} ${y1}`;
+  }
+  svg.innerHTML = `<path d="${d}"/>`;
+}
+window.addEventListener('resize', () => { drawMapPath(); const c = $('#confetti'); if (c) { c.width = innerWidth; c.height = innerHeight; } });
+
 /* ------------------------------------------------------------
-   Трофеи
+   Трофеи и библиотека
    ------------------------------------------------------------ */
 function renderTrophies() {
-  show('trophyView');
-  const g = $('#achievementGrid');
-  g.innerHTML = ACHIEVEMENTS.map(a => {
+  show('trophyView'); setTab('trophy');
+  const n = Object.keys(state.achievements).length;
+  $('#trophyBubble').textContent = n ? `У тебя ${n} ${plural(n, 'достижение', 'достижения', 'достижений')} из ${ACHIEVEMENTS.length}. Так держать!` : 'Пройди первую миссию — и здесь появится первый трофей!';
+  $('#achievementGrid').innerHTML = ACHIEVEMENTS.map(a => {
     const d = state.achievements[a.id];
     return `<div class="ach${d ? '' : ' locked'}"><div class="i">${a.icon}</div><div><b>${esc(a.title)}</b><small>${esc(a.desc)}${d ? ` · ${d.slice(8, 10)}.${d.slice(5, 7)}` : ''}</small></div></div>`;
   }).join('');
@@ -517,26 +520,40 @@ function renderTrophies() {
   $('#levelList').innerHTML = LEVELS.map((l, i) => `<div class="lvl${i <= lv.idx ? ' reached' : ''}${i === lv.idx ? ' current' : ''}"><div class="i">${l.icon}</div><b>${i + 1}. ${esc(l.title)}</b><small>${l.xp} опыта</small></div>`).join('');
 }
 
+function renderLibrary() {
+  show('libraryView'); setTab('library');
+  const seen = new Map();
+  LESSONS.forEach((l, li) => l.exercises.forEach(e => { if (!seen.has(e.name)) seen.set(e.name, { e, lessons: [] }); seen.get(e.name).lessons.push(li + 1); }));
+  $('#libraryList').innerHTML = [...seen.values()].map(({ e, lessons }) => {
+    const pos = POSITIONS[e.pos] || POSITIONS.stand;
+    return `<div class="lib"><div class="pic">${demoMarkup(e.visual, pos.label).replace(/<div class="demo-label">.*?<\/div>/, '')}</div>
+      <div><b>${esc(e.name)}</b><small>${esc(e.how)}</small><span class="tag">${pos.icon} ${esc(pos.label)} · миссии ${lessons.join(', ')}</span></div></div>`;
+  }).join('');
+}
+
 /* ------------------------------------------------------------
    Прохождение миссии
    ------------------------------------------------------------ */
 const run = {
   lessonIdx: 0, exIdx: 0, status: 'idle', // idle | ready | running | paused | done
-  endAt: 0, remainingMs: 0, totalMs: 0, tick: null, readyTimer: null,
+  endAt: 0, remainingMs: 0, totalMs: 0, tick: null, readyTimer: null, tipTimer: null,
   done: new Set(), skipped: new Set(), feedback: {}, activeMs: 0, lastTickAt: 0,
   flags: {}, startedAt: null, leaveArmed: 0,
 };
 const RING_LEN = 2 * Math.PI * 52;
+const RICO_IMG = { idle: 'assets/rico/rico-big.webp', ready: 'assets/rico/rico-think.webp', running: 'assets/rico/rico-wink.webp', done: 'assets/rico/rico-laugh.webp', pain: 'assets/rico/rico-love.webp' };
 
 function speed() { return state.settings.demo ? DEMO_SPEED : 1; }
+
+function rico(text, mood) {
+  if (text) $('#ricoText').textContent = text;
+  if (mood && RICO_IMG[mood]) $('#ricoImg').src = RICO_IMG[mood];
+}
 
 function openLesson(i) {
   run.lessonIdx = i; run.exIdx = 0; run.done = new Set(); run.skipped = new Set(); run.feedback = {};
   run.activeMs = 0; run.startedAt = new Date().toISOString(); run.status = 'idle';
   const l = LESSONS[i];
-  document.documentElement.style.setProperty('--primary', l.color);
-  $('#lessonBadge').textContent = l.badge;
-  $('#lessonTitle').textContent = `Миссия ${i + 1}. ${l.title}`;
   $('#exercisePanel').hidden = false; $('#finishPanel').hidden = true;
   show('lessonView');
   renderExercise();
@@ -545,6 +562,14 @@ function openLesson(i) {
 
 function currentExercise() { return LESSONS[run.lessonIdx].exercises[run.exIdx]; }
 
+function updateStarTrack() {
+  const n = LESSONS[run.lessonIdx].exercises.length;
+  const doneCount = run.done.size + run.skipped.size;
+  const pct = Math.round((doneCount / n) * 100);
+  $('#starFill').style.width = pct + '%';
+  $$('.track-star').forEach(s => s.classList.toggle('on', pct >= Number(s.dataset.at)));
+}
+
 function renderExercise() {
   stopTick();
   const l = LESSONS[run.lessonIdx], e = currentExercise();
@@ -552,15 +577,16 @@ function renderExercise() {
   $('#phase').textContent = e.phase;
   const pos = POSITIONS[e.pos] || POSITIONS.stand;
   $('#position').textContent = `${pos.icon} ${pos.label}`;
+  $('#cueChip').textContent = e.breath ? '🌬️ Дыши спокойно' : (e.sides ? '↔️ Обе стороны' : '🐢 Спокойный темп');
   $('#exerciseName').textContent = e.name;
   $('#exerciseHow').textContent = e.how;
-  $('#demoHost').innerHTML = figureSVG(e.visual, pos.label);
-  $('#counter').textContent = `Упражнение ${run.exIdx + 1} из ${l.exercises.length}`;
-  $('#lessonSteps').innerHTML = l.exercises.map((_, i) => `<i class="${run.done.has(i) || run.skipped.has(i) ? 'done' : ''}${i === run.exIdx ? ' cur' : ''}"></i>`).join('');
+  $('#demoHost').innerHTML = demoMarkup(e.visual, pos.label);
+  $('#counter').textContent = `Миссия ${run.lessonIdx + 1} · упражнение ${run.exIdx + 1} из ${l.exercises.length}`;
+  updateStarTrack();
   $('#timer').textContent = fmt(e.sec);
-  $('#timerHint').textContent = 'нажми «Начать»';
+  $('#timerHint').textContent = 'нажми ▶';
   $('#ringFg').style.strokeDashoffset = 0; $('#ringFg').classList.remove('warn');
-  $('#startBtn').textContent = '▶ Начать'; $('#startBtn').disabled = false;
+  $('#startBtn').textContent = '▶'; $('#startBtn').disabled = false; $('#startBtn').setAttribute('aria-label', 'Начать');
   $('#nextBtn').disabled = true;
   $('#feedbackRow').hidden = true; $$('.fb').forEach(b => b.classList.remove('active'));
   $('#sideRow').hidden = !e.sides; $$('.side').forEach(s => s.classList.remove('active'));
@@ -568,6 +594,7 @@ function renderExercise() {
   $('#breathPacer').hidden = !e.breath; $('#breathPacer').classList.remove('run');
   $('.timer-wrap').classList.toggle('paced', !!e.breath);
   $('#skipBtn').hidden = false;
+  rico(e.how.split(/(?<=[.!?])\s/)[0], 'idle');
 }
 
 function startOrPause() {
@@ -581,18 +608,15 @@ function beginReady() {
   const e = currentExercise(); const pos = POSITIONS[e.pos] || POSITIONS.stand;
   run.status = 'ready';
   $('#readyOverlay').hidden = false; $('#readyPos').textContent = `${pos.icon} ${pos.label}`;
-  $('#readyLabel').textContent = 'Приготовься';
+  $('#readyLabel').textContent = ricoLine('ready');
+  rico(ricoLine('ready'), 'ready');
   speech.say(`${e.name}. ${e.how}`);
   let n = state.settings.demo ? 1 : 3;
   const step = () => {
     $('#readyNum').textContent = n; audio.tick(); vibrate(30);
-    if (n === 0) {
-      $('#readyOverlay').hidden = true; run.readyTimer = null;
-      startRunning(); return;
-    }
+    if (n === 0) { $('#readyOverlay').hidden = true; run.readyTimer = null; startRunning(); return; }
     n--; run.readyTimer = setTimeout(step, 1000);
   };
-  // даём голосу назвать упражнение, затем отсчёт
   run.readyTimer = setTimeout(step, state.settings.voice && !state.settings.demo ? 2200 : 300);
 }
 
@@ -601,11 +625,14 @@ function startRunning() {
   run.status = 'running';
   run.endAt = Date.now() + run.remainingMs / speed();
   run.lastTickAt = Date.now();
-  $('#startBtn').textContent = '⏸ Пауза';
+  $('#startBtn').textContent = '⏸'; $('#startBtn').setAttribute('aria-label', 'Пауза');
   $('#timerHint').textContent = e.sides ? 'левая сторона' : (e.breath ? '' : 'спокойный темп');
   if (e.breath) $('#breathPacer').classList.add('run');
   audio.go(); vibrate([40, 60, 40]);
   if (!run.flags.started) { run.flags.started = true; speech.say('Начали!', { interrupt: false }); }
+  rico(ricoLine(e.breath ? 'breath' : 'running'), 'running');
+  clearInterval(run.tipTimer);
+  run.tipTimer = setInterval(() => { if (run.status === 'running' && !run.flags.sideJustNow) rico(ricoLine(e.breath ? 'breath' : 'running')); run.flags.sideJustNow = false; }, 9000);
   run.tick = setInterval(onTick, 200);
   onTick();
 }
@@ -613,12 +640,18 @@ function startRunning() {
 function pauseTimer() {
   run.remainingMs = Math.max(0, (run.endAt - Date.now()) * speed());
   stopTick(); run.status = 'paused';
-  $('#startBtn').textContent = '▶ Продолжить'; $('#timerHint').textContent = 'пауза';
+  $('#startBtn').textContent = '▶'; $('#startBtn').setAttribute('aria-label', 'Продолжить'); $('#timerHint').textContent = 'пауза';
   $('#breathPacer').classList.remove('run');
+  rico('Пауза. Нажми ▶, когда будешь готов.', 'ready');
   speech.stop();
 }
 function resumeTimer() { startRunning(); }
-function stopTick() { if (run.tick) clearInterval(run.tick); run.tick = null; if (run.readyTimer) clearTimeout(run.readyTimer); run.readyTimer = null; $('#readyOverlay').hidden = true; }
+function stopTick() {
+  if (run.tick) clearInterval(run.tick); run.tick = null;
+  if (run.readyTimer) clearTimeout(run.readyTimer); run.readyTimer = null;
+  clearInterval(run.tipTimer); run.tipTimer = null;
+  $('#readyOverlay').hidden = true;
+}
 
 function onTick() {
   const e = currentExercise();
@@ -631,14 +664,13 @@ function onTick() {
   $('#ringFg').style.strokeDashoffset = RING_LEN * (1 - remainingMs / run.totalMs);
   $('#ringFg').classList.toggle('warn', remainingSec <= 10);
 
-  // стороны: смена на половине
   if (e.sides && !run.flags.side && elapsedMs >= run.totalMs / 2) {
-    run.flags.side = true;
+    run.flags.side = true; run.flags.sideJustNow = true;
     $$('.side').forEach(s => s.classList.toggle('active', s.dataset.side === 'R'));
     $('#timerHint').textContent = 'правая сторона';
-    audio.side(); vibrate([80, 60, 80]); speech.say('Смени сторону!');
+    const line = ricoLine('side'); rico(line, 'running');
+    audio.side(); vibrate([80, 60, 80]); speech.say(line);
   }
-  // дыхательный маятник: 4 с вдох, 6 с выдох
   if (e.breath) {
     const ph = (elapsedMs % 10000) < 4000 ? 'вдох' : 'выдох';
     if (run.flags.breath !== ph) {
@@ -646,8 +678,7 @@ function onTick() {
       if (ph === 'вдох') audio.inhale(); else audio.exhale();
     }
   }
-  // голосовые подсказки об остатке
-  if (!run.flags.ten && remainingSec <= 10 && run.totalMs >= 30000) { run.flags.ten = true; speech.say('Осталось десять секунд', { interrupt: false }); }
+  if (!run.flags.ten && remainingSec <= 10 && run.totalMs >= 30000) { run.flags.ten = true; speech.say('Осталось десять секунд', { interrupt: false }); rico('Осталось 10 секунд, держись!'); }
   [3, 2, 1].forEach(n => { if (!run.flags['c' + n] && remainingSec <= n && remainingSec > n - 1) { run.flags['c' + n] = true; audio.tick(); } });
 
   if (remainingMs <= 0) completeExercise();
@@ -659,21 +690,20 @@ function completeExercise() {
   $('#timer').textContent = '0:00'; $('#timerHint').textContent = 'готово!';
   $('#ringFg').style.strokeDashoffset = RING_LEN;
   $('#breathPacer').classList.remove('run');
-  $('#startBtn').textContent = '✓ Готово'; $('#startBtn').disabled = true;
+  $('#startBtn').textContent = '✓'; $('#startBtn').disabled = true;
   $('#nextBtn').disabled = false;
   $('#feedbackRow').hidden = false; $('#skipBtn').hidden = true;
-  $('#lessonSteps').children[run.exIdx].className = 'done';
+  updateStarTrack();
+  const line = ricoLine('done'); rico(line, 'done');
   audio.done(); vibrate([60, 40, 60, 40, 120]);
-  speech.say(pick(PRAISE));
+  speech.say(line);
 }
 
 function setFeedback(v) {
   run.feedback[run.exIdx] = v;
   $$('.fb').forEach(b => b.classList.toggle('active', b.dataset.fb === v));
   audio.tick();
-  if (v === 'pain') {
-    toast('Расскажи взрослому. Если больно — лучше остановиться.', 3200);
-  }
+  if (v === 'pain') { rico(ricoLine('pain'), 'pain'); toast('Расскажи взрослому. Если больно — лучше остановиться.', 3200); }
 }
 
 function skipExercise() {
@@ -712,7 +742,7 @@ function finishLesson(stopped) {
   const streakForBonus = doneToday ? streakBefore.current : streakBefore.current + 1;
   const sec = Math.round(run.activeMs / 1000 * (state.settings.demo ? DEMO_SPEED : 1));
 
-  let xp = run.done.size * XP.exercise + stars * XP.star + (firstTime ? XP.firstTime : 0)
+  const xp = run.done.size * XP.exercise + stars * XP.star + (firstTime ? XP.firstTime : 0)
     + Math.min(streakForBonus, 7) * XP.streakDay + (stopped ? XP.honesty : 0);
   const levelBefore = levelInfo().number;
   const session = {
@@ -724,33 +754,40 @@ function finishLesson(stopped) {
   const lvAfter = levelInfo();
   saveState();
 
-  // экран финала
   $('#exercisePanel').hidden = true; $('#finishPanel').hidden = false;
-  const hero = heroOf();
-  $('#finishHero').textContent = stopped ? '💚' : hero.emoji;
-  $('#finishTitle').textContent = stopped ? 'Ты правильно остановился' : (stars === 3 ? 'Идеально! Миссия пройдена' : 'Миссия завершена!');
+  $('#finishTitle').textContent = stopped ? 'Ты правильно остановился' : (stars === 3 ? 'Миссия выполнена!' : 'Миссия завершена!');
+  $('#finishImg').src = stopped ? 'assets/rico/rico-love.webp' : 'assets/scenes/highfive.webp';
+  $('#finishImg').style.objectFit = stopped ? 'contain' : 'cover';
   $$('#finishStars span').forEach((s, i) => s.classList.toggle('on', i < stars));
+  $('#finishStarsText').textContent = `${stars} ${plural(stars, 'звезда', 'звезды', 'звёзд')}`;
+  const st = streakInfo();
+  $('#finishStreak').textContent = `${st.current} ${plural(st.current, 'день', 'дня', 'дней')}`;
+  $('#finishPraise').textContent = stopped ? 'Честный герой 💚' : `${pick(PRAISE)} ⭐`;
   const pain = Object.values(run.feedback).includes('pain');
   $('#finishText').textContent = stopped
     ? 'Остановиться при боли — поступок настоящего героя. Расскажи родителю, где и когда было больно, и не продолжай упражнение без консультации.'
     : pain ? 'Ты честно отметил боль — это важно. Обязательно расскажи взрослому перед следующим занятием.'
-      : stars === 3 ? `${pick(PRAISE)} Спина становится сильнее с каждым днём.`
+      : stars === 3 ? 'Спина становится сильнее с каждым днём.'
         : stars === 2 ? 'Отлично! В следующий раз попробуй выполнить все упражнения — и получишь третью звезду.'
           : 'Главное — ты занимался. Завтра получится ещё лучше!';
   $('#finishXp').textContent = '+' + xp;
-  $('#finishStreak').textContent = streakInfo().current;
   $('#finishMinutes').textContent = Math.max(1, Math.round(sec / 60));
+  $('#finishDone').textContent = `${run.done.size}/${l.exercises.length}`;
   const achBox = $('#finishAch');
   achBox.hidden = !unlocked.length;
   achBox.innerHTML = unlocked.map(a => `<div class="ach-toast"><div class="i">${a.icon}</div><div><b>Новое достижение: ${esc(a.title)}</b><small>${esc(a.desc)}</small></div></div>`).join('');
   const lu = $('#levelUp');
   lu.hidden = lvAfter.number <= levelBefore;
   if (!lu.hidden) lu.textContent = `⬆️ Новый уровень ${lvAfter.number}: ${lvAfter.level.icon} ${lvAfter.level.title}`;
+  // следующая миссия: первая незавершённая открытая, иначе повтор
+  const nextIdx = LESSONS.findIndex((x, i) => i > run.lessonIdx && isUnlocked(i) && !bestStars()[x.id]);
+  $('#nextMissionBtn').hidden = stopped;
+  $('#nextMissionBtn').onclick = () => openLesson(nextIdx === -1 ? todayMission().idx : nextIdx);
 
   if (!stopped) {
     confetti(stars === 3 ? 180 : 90);
     audio.fanfare(); vibrate([100, 60, 100, 60, 200]);
-    speech.say(stars === 3 ? 'Миссия пройдена на три звезды! Ты молодец!' : 'Миссия завершена. Отличная работа!');
+    speech.say(stars === 3 ? `${ricoLine('finish')} Три звезды!` : ricoLine('finish'));
   } else {
     audio.done();
   }
@@ -759,7 +796,6 @@ function finishLesson(stopped) {
 
 function closeFinish() {
   $('#exercisePanel').hidden = false; $('#finishPanel').hidden = true;
-  document.documentElement.style.setProperty('--primary', '#6c5ce7');
   renderHome();
 }
 
@@ -768,15 +804,13 @@ function leaveLesson() {
   if (inProgress && Date.now() - run.leaveArmed > 3000) {
     run.leaveArmed = Date.now();
     if (run.status === 'running') pauseTimer();
-    toast('Выйти без сохранения? Нажми «Карта» ещё раз', 3000);
+    toast('Выйти без сохранения? Нажми ‹ ещё раз', 3000);
     return;
   }
   stopTick(); speech.stop();
-  document.documentElement.style.setProperty('--primary', '#6c5ce7');
   renderHome();
 }
 
-/* Остановка при боли */
 function painStop() {
   if (run.status === 'running') pauseTimer();
   $('#painModal').showModal();
@@ -844,7 +878,7 @@ function renderParentOverview() {
   const week = state.sessions.filter(s => (Date.now() - new Date(s.at)) < 7 * 86400000).length;
   $('#parentOverview').innerHTML = `
     <div class="kv">
-      <span>Ребёнок</span><b>${esc(state.profile ? state.profile.name : '—')} ${heroOf().emoji}</b>
+      <span>Ребёнок</span><b>${esc(childName())}</b>
       <span>Уровень героя</span><b>${lv.number} · ${esc(lv.level.title)} (${state.xp} опыта)</b>
       <span>Занятий всего</span><b>${state.sessions.length}</b>
       <span>Занятий за 7 дней</span><b>${week}</b>
@@ -881,7 +915,7 @@ function renderParentSettings() {
   const sw = (key, label, hint) => `<label class="setting"><div>${label}<small>${hint}</small></div><span class="switch"><input type="checkbox" data-set="${key}" ${s[key] ? 'checked' : ''}><i></i></span></label>`;
   $('#parentSettings').innerHTML = `
     ${sw('sound', '🔊 Звуковые сигналы', 'старт, смена стороны, отсчёт, фанфары')}
-    ${sw('voice', '🗣️ Голосовые подсказки', 'озвучивание упражнений — ребёнку не нужно смотреть в экран')}
+    ${sw('voice', '🗣️ Голосовые подсказки', 'Рико озвучивает упражнения — ребёнку не нужно смотреть в экран')}
     ${sw('vibrate', '📳 Вибрация', 'на телефонах с поддержкой')}
     ${sw('freeMode', '🗺️ Все миссии открыты', 'иначе миссии открываются по очереди')}
     ${sw('demo', '⚡ Демо‑режим', `таймер в ${DEMO_SPEED} раз быстрее — для тестирования`)}
@@ -889,11 +923,11 @@ function renderParentSettings() {
       <div class="pin-set"><input type="tel" id="pinInput" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="••••" value="${esc(s.pin)}"><button class="btn small ghost" id="pinSave" type="button">Сохранить</button></div></div>
     <div class="btn-row">
       <button class="btn small ghost" id="exportBtn" type="button">📤 Экспорт данных</button>
-      <button class="btn small ghost" id="changeHeroBtn" type="button">🎭 Сменить героя / имя</button>
+      <button class="btn small ghost" id="changeHeroBtn" type="button">✏️ Изменить имя</button>
       <button class="btn small ghost red" id="resetBtn" type="button">🗑️ Сбросить прогресс</button>
       <button class="btn small ghost" id="reloadBtn" type="button">🔄 Обновить приложение</button>
     </div>
-    <p style="font-size:12px;margin-top:12px">Версия 2.0 · данные хранятся только на этом устройстве</p>`;
+    <p style="font-size:12px;margin-top:12px">Версия 2.1 · данные хранятся только на этом устройстве</p>`;
   $$('#parentSettings input[data-set]').forEach(inp => {
     inp.onchange = () => { state.settings[inp.dataset.set] = inp.checked; saveState(); if (inp.dataset.set === 'sound') $('#soundBtn').textContent = state.settings.sound ? '🔊' : '🔇'; };
   });
@@ -919,7 +953,6 @@ function exportData() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `spina-quest-${todayStr()}.json`; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-  // запасной путь (если скачивание заблокировано): копируем JSON в буфер обмена
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(data).then(() => toast('Данные сохранены в файл и скопированы в буфер обмена'), () => toast('Файл с данными сохранён'));
   } else toast('Файл с данными сохранён');
@@ -941,14 +974,18 @@ $('#parentBtn').onclick = openParent;
 $('#closeParent').onclick = () => $('#parentModal').close();
 $('#pinCancel').onclick = () => $('#parentModal').close();
 $$('#parentTabs .tab').forEach(t => { t.onclick = () => renderParent(t.dataset.tab); });
-$('#trophyBtn').onclick = renderTrophies;
 $('#trophyBack').onclick = renderHome;
+$('#libraryBtn').onclick = renderLibrary;
+$('#libraryBack').onclick = renderHome;
+$$('.tab-item').forEach(t => {
+  t.onclick = () => {
+    const n = t.dataset.nav;
+    if (n === 'home') renderHome(); else if (n === 'trophy') renderTrophies(); else if (n === 'library') renderLibrary(); else if (n === 'parent') openParent();
+  };
+});
 $('#soundBtn').onclick = () => { state.settings.sound = !state.settings.sound; saveState(); $('#soundBtn').textContent = state.settings.sound ? '🔊' : '🔇'; if (state.settings.sound) audio.go(); };
-$('#readyOverlay').onclick = () => { /* тап по оверлею ничего не делает — защита от случайного пропуска */ };
-
-// если вкладка ушла в фон и вернулась — сразу пересчитать таймер
+$('#readyOverlay').onclick = () => { /* защита от случайного пропуска */ };
 document.addEventListener('visibilitychange', () => { if (!document.hidden && run.status === 'running') onTick(); });
-window.addEventListener('resize', () => { const c = $('#confetti'); if (c) { c.width = innerWidth; c.height = innerHeight; } });
 
 /* ------------------------------------------------------------
    Старт

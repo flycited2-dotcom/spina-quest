@@ -28,7 +28,6 @@ const SHOTS = path.join(__dirname, 'shots'); require('fs').mkdirSync(SHOTS, { re
   await page.check('#consentDoctor'); await page.check('#consentAdult');
   await page.click('#onboardNext1'); await page.waitForTimeout(300);
   await page.fill('#childName', 'Миша');
-  await page.click('.hero-pick:nth-child(3)');
   await page.screenshot({ path: `${SHOTS}/02-onboard-2.png`, fullPage: true });
   await page.click('#onboardStart'); await page.waitForTimeout(500);
   await page.screenshot({ path: `${SHOTS}/03-home-empty.png`, fullPage: true });
@@ -77,13 +76,16 @@ const SHOTS = path.join(__dirname, 'shots'); require('fs').mkdirSync(SHOTS, { re
   await page.click('#closeFinish'); await page.waitForTimeout(300);
 
   // ---------- Locked lesson tap ----------
-  await page.click('.lesson-card.locked'); await page.waitForTimeout(200);
+  await page.click('.node.locked'); await page.waitForTimeout(200);
   await page.screenshot({ path: `${SHOTS}/15-locked-toast.png` });
 
   // ---------- Trophies ----------
-  await page.click('#trophyBtn'); await page.waitForTimeout(300);
+  await page.click('.tab-item[data-nav="trophy"]'); await page.waitForTimeout(300);
   await page.screenshot({ path: `${SHOTS}/16-trophies.png`, fullPage: true });
   await page.click('#trophyBack');
+  await page.click('#libraryBtn'); await page.waitForTimeout(400);
+  await page.screenshot({ path: `${SHOTS}/16b-library.png`, fullPage: true });
+  await page.click('#libraryBack');
 
   // ---------- Parent history + PIN ----------
   await page.click('#parentBtn'); await page.waitForTimeout(200);

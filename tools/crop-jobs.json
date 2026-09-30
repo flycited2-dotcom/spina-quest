@@ -1,0 +1,176 @@
+[
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/rico/rico-big.webp",
+  "x": 0,
+  "y": 0,
+  "w": 440,
+  "h": 430,
+  "maxH": 640,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/rico/rico-wink.webp",
+  "x": 0,
+  "y": 430,
+  "w": 135,
+  "h": 120,
+  "maxH": 240,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/rico/rico-think.webp",
+  "x": 135,
+  "y": 430,
+  "w": 135,
+  "h": 120,
+  "maxH": 240,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/rico/rico-laugh.webp",
+  "x": 270,
+  "y": 430,
+  "w": 135,
+  "h": 120,
+  "maxH": 240,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/rico/rico-love.webp",
+  "x": 405,
+  "y": 430,
+  "w": 135,
+  "h": 120,
+  "maxH": 240,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/poses/boy-hips.webp",
+  "x": 540,
+  "y": 60,
+  "w": 270,
+  "h": 510,
+  "maxH": 640,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/poses/side-bend.webp",
+  "x": 795,
+  "y": 110,
+  "w": 200,
+  "h": 460,
+  "maxH": 640,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/poses/lunge.webp",
+  "x": 968,
+  "y": 220,
+  "w": 242,
+  "h": 350,
+  "maxH": 640,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/poses/tpose-back.webp",
+  "x": 1200,
+  "y": 180,
+  "w": 240,
+  "h": 390,
+  "maxH": 640,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/scenes/cobra.webp",
+  "x": 0,
+  "y": 690,
+  "w": 600,
+  "h": 396,
+  "maxH": 500,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/151d77cb-image.png",
+  "out": "assets/scenes/highfive.webp",
+  "x": 900,
+  "y": 690,
+  "w": 548,
+  "h": 396,
+  "maxH": 500,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/c674efa3-image.png",
+  "out": "assets/scenes/birddog.webp",
+  "x": 0,
+  "y": 460,
+  "w": 941,
+  "h": 580,
+  "maxW": 800,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/b741da8e-image.png",
+  "out": "assets/poses/boy-wave.webp",
+  "x": 660,
+  "y": 200,
+  "w": 270,
+  "h": 270,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/b741da8e-image.png",
+  "out": "assets/rico/rico-home.webp",
+  "x": 60,
+  "y": 100,
+  "w": 300,
+  "h": 270,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/668e8be3-image.png",
+  "out": "assets/poses/stand-front.webp",
+  "maxH": 720,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/3c3788b2-image.png",
+  "out": "assets/poses/stand-side.webp",
+  "maxH": 720,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/9ca98f7b-image.png",
+  "out": "assets/poses/stand-side-left.webp",
+  "maxH": 720,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/6aa4a7f6-image.png",
+  "out": "assets/poses/tpose-front.webp",
+  "maxH": 720,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/f8b19c16-image.png",
+  "out": "assets/poses/stand-back.webp",
+  "maxH": 720,
+  "webp": true
+ },
+ {
+  "src": "/root/.claude/uploads/c0a2e771-4ef2-571c-bdb6-848e3986de81/b9f6b2cb-image.png",
+  "out": "assets/poses/stand-front34.webp",
+  "maxH": 720,
+  "webp": true
+ }
+]

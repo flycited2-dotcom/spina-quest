@@ -1,9 +1,14 @@
 /* Сервис-воркер: офлайн-кэш. При каждом релизе меняйте CACHE_VERSION —
    старые кэши удаляются автоматически. */
-const CACHE_VERSION = 'spina-quest-v2.0.0';
+const CACHE_VERSION = 'spina-quest-v2.1.0';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './data.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png',
+  './assets/rico/rico-big.webp', './assets/rico/rico-home.webp', './assets/rico/rico-wink.webp', './assets/rico/rico-think.webp',
+  './assets/rico/rico-laugh.webp', './assets/rico/rico-love.webp',
+  './assets/poses/boy-wave.webp', './assets/poses/boy-hips.webp', './assets/poses/stand-front.webp', './assets/poses/stand-side.webp',
+  './assets/poses/stand-side-left.webp', './assets/poses/stand-back.webp', './assets/poses/tpose-front.webp', './assets/poses/lunge.webp',
+  './assets/scenes/highfive.webp', './assets/scenes/birddog.webp',
 ];
 
 self.addEventListener('install', e => {
