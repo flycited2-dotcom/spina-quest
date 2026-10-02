@@ -1,6 +1,6 @@
 /* Сервис-воркер: офлайн-кэш. При каждом релизе меняйте CACHE_VERSION —
    старые кэши удаляются автоматически. */
-const CACHE_VERSION = 'spina-quest-v2.1.0';
+const CACHE_VERSION = 'spina-quest-v2.2.0';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './data.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png',
@@ -9,6 +9,8 @@ const ASSETS = [
   './assets/poses/boy-wave.webp', './assets/poses/boy-hips.webp', './assets/poses/stand-front.webp', './assets/poses/stand-side.webp',
   './assets/poses/stand-side-left.webp', './assets/poses/stand-back.webp', './assets/poses/tpose-front.webp', './assets/poses/lunge.webp',
   './assets/scenes/highfive.webp', './assets/scenes/birddog.webp',
+  ...['walk', 'shoulders', 'bridge', 'deadbug', 'breath', 'stand', 'breathstand', 'scapula', 'armraise', 'wallslide', 'armsup', 'wall']
+    .flatMap(k => [`./assets/video/${k}.mp4`, `./assets/video/${k}.webm`]),
 ];
 
 self.addEventListener('install', e => {

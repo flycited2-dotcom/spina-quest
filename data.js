@@ -321,6 +321,23 @@ const POSE_IMAGES = {
   armsup: 'assets/poses/tpose-front.webp',
 };
 
+// Ролики-демонстрации: visual → MP4 (рядом лежит одноимённый .webm). Показываются вместо картинки;
+// если файл не загрузился — фолбэк на POSE_IMAGES, затем на SVG-схему. Как делать: docs/prompts/README.md
+const POSE_VIDEOS = {
+  walk: 'assets/video/walk.mp4',
+  shoulders: 'assets/video/shoulders.mp4',
+  bridge: 'assets/video/bridge.mp4',
+  deadbug: 'assets/video/deadbug.mp4',
+  breath: 'assets/video/breath.mp4',
+  stand: 'assets/video/stand.mp4',
+  breathstand: 'assets/video/breathstand.mp4',
+  scapula: 'assets/video/scapula.mp4',
+  armraise: 'assets/video/armraise.mp4',
+  wallslide: 'assets/video/wallslide.mp4',
+  armsup: 'assets/video/armsup.mp4',
+  wall: 'assets/video/wall.mp4',
+};
+
 // Уровни героя (опыт копится за каждое упражнение и миссию)
 const LEVELS = [
   { xp: 0, title: 'Новичок', icon: '🌱' },

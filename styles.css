@@ -163,6 +163,8 @@ img{max-width:100%}
 .demo{position:relative;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 30%,#fff 0,#eaf4fd 70%);border:3px solid #fff;box-shadow:var(--shadow);height:240px;display:grid;place-items:center;grid-template-columns:100%;grid-template-rows:100%}
 .demo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;padding:6px}
 .demo img.scene{object-fit:cover;padding:0}
+.demo:has(.demo-video){height:auto;aspect-ratio:4/3}
+.demo .demo-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#eef5fc}
 .demo svg{width:100%;height:100%;max-width:320px}
 .demo .floor{stroke:#cfe0f3;stroke-width:4;stroke-linecap:round}
 .demo .wallline{stroke:#ffd6a8;stroke-width:6;stroke-linecap:round}

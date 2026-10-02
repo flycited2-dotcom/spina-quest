@@ -1,10 +1,10 @@
 // Автотест: npx http-server -p 8765 . && node tools/e2e.js  (нужны playwright + chromium)
-const { chromium } = require('playwright');
+const { chromium } = require(process.env.PW_MODULE || 'playwright');
 const path = require('path');
 const APP = 'http://127.0.0.1:8765/index.html';
 const SHOTS = path.join(__dirname, 'shots'); require('fs').mkdirSync(SHOTS, { recursive: true });
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.PW_EXEC ? { executablePath: process.env.PW_EXEC } : {});
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'ru-RU' });
   const page = await ctx.newPage();
   const errors = [];
@@ -42,7 +42,48 @@ const SHOTS = path.join(__dirname, 'shots'); require('fs').mkdirSync(SHOTS, { re
 
   // ---------- Lesson 1: run all exercises quickly ----------
   await page.click('#todayBtn'); await page.waitForTimeout(500);
+  await page.waitForTimeout(1200);
   await page.screenshot({ path: `${SHOTS}/06-lesson-idle.png`, fullPage: true });
+
+  // ---------- Видео-демонстрация: ролик играет; без ролика — картинка/схема; битый ролик — фолбэк ----------
+  const vid = await page.evaluate(() => {
+    const v = document.querySelector('#demoHost video.demo-video');
+    return v ? { ready: v.readyState, paused: v.paused, muted: v.muted, loop: v.loop, w: v.videoWidth, h: v.videoHeight, src: v.currentSrc } : null;
+  });
+  console.log('VIDEO walk:', JSON.stringify(vid));
+  if (!vid || vid.ready < 2 || vid.paused || !vid.muted || !vid.loop || vid.w !== 960) throw new Error('walk-ролик не играет: ' + JSON.stringify(vid));
+  const errBefore = errors.length;
+  const fb = await page.evaluate(() => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const keys = Object.keys(FIGURES);
+    const noVid = keys.find(k => !POSE_VIDEOS[k] && !POSE_IMAGES[k]);            // только схема
+    const imgOnly = keys.find(k => !POSE_VIDEOS[k] && POSE_IMAGES[k]);           // картинка
+    host.innerHTML = demoMarkup(noVid, 'x'); const svg = !!host.querySelector('svg') && !host.querySelector('video');
+    host.innerHTML = demoMarkup(imgOnly, 'x'); const img = !!host.querySelector('img') && !host.querySelector('video');
+    // битый ролик: временно подменяем карту, ожидаем подмену на картинку (bird) или схему
+    POSE_VIDEOS.__broken = 'assets/video/__missing__.mp4';
+    POSE_IMAGES.__broken = POSE_IMAGES.stand;
+    host.innerHTML = demoMarkup('__broken', 'x');
+    return { svg, img };
+  });
+  await page.waitForTimeout(1500);
+  // два ожидаемых 404 (webm и mp4 несуществующего ролика) — не считаем ошибками
+  for (let i = errors.length - 1; i >= errBefore; i--) if (/404/.test(errors[i])) errors.splice(i, 1);
+  const broken = await page.evaluate(() => {
+    const hosts = [...document.body.children].filter(n => n.tagName === 'DIV' && !n.className && !n.id);
+    const h = hosts[hosts.length - 1];
+    const res = { video: !!h.querySelector('video'), img: !!h.querySelector('img'), label: h.querySelectorAll('.demo-label').length };
+    delete POSE_VIDEOS.__broken; delete POSE_IMAGES.__broken; hosts.forEach(n => n.remove());
+    return res;
+  });
+  console.log('VIDEO fallback:', JSON.stringify({ svg: fb.svg, img: fb.img, broken }));
+  if (!fb.svg || !fb.img || broken.video || !broken.img || broken.label !== 1) throw new Error('фолбэк видео работает неверно');
+  // библиотека не должна запускать ролики
+  await page.evaluate(() => renderLibrary());
+  const libVideos = await page.evaluate(() => document.querySelectorAll('#libraryList video').length);
+  if (libVideos !== 0) throw new Error('в библиотеке не должно быть видео');
+  await page.evaluate(() => openLesson(0));
+  await page.waitForTimeout(500);
   const n = await page.evaluate(() => LESSONS[0].exercises.length);
   for (let i = 0; i < n; i++) {
     await page.click('#startBtn');

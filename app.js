@@ -386,12 +386,31 @@ function figureSVG(visual, label) {
   return `<svg viewBox="0 0 300 200" role="img" aria-label="${esc(label)}">${draw()}</svg><div class="demo-label">${esc(label)}</div>`;
 }
 
-// Демонстрация: картинка персонажа, если есть, иначе схема
-function demoMarkup(visual, label) {
+// Демонстрация: ролик (если есть) → картинка персонажа → схема.
+// withVideo=false — для библиотеки, чтобы не крутить десятки роликов сразу.
+function demoMarkup(visual, label, withVideo = true) {
+  const vid = withVideo && (typeof POSE_VIDEOS !== 'undefined') && POSE_VIDEOS[visual];
+  if (vid) {
+    return `<video class="demo-video" muted loop autoplay playsinline preload="auto" aria-label="${esc(label)}" data-visual="${esc(visual)}" data-label="${esc(label)}">` +
+      `<source src="${vid.replace(/\.mp4$/, '.webm')}" type="video/webm"><source src="${vid}" type="video/mp4"></video>` +
+      `<div class="demo-label">${esc(label)}</div>`;
+  }
   const img = (typeof POSE_IMAGES !== 'undefined') && POSE_IMAGES[visual];
   if (img) return `<img src="${img}" alt="${esc(label)}" class="${img.includes('/scenes/') ? 'scene' : 'pose'}"><div class="demo-label">${esc(label)}</div>`;
   return figureSVG(visual, label);
 }
+
+// Ролик не загрузился (нет файла, офлайн, не поддерживается) — подменяем на картинку или схему.
+// Событие error не всплывает, поэтому слушаем в фазе перехвата; у <source> ошибку считаем по последнему источнику.
+document.addEventListener('error', ev => {
+  const t = ev.target;
+  const video = t instanceof HTMLVideoElement ? t : (t instanceof HTMLSourceElement && t.parentElement instanceof HTMLVideoElement && !t.nextElementSibling ? t.parentElement : null);
+  if (!video || !video.classList.contains('demo-video')) return;
+  const host = video.parentElement;
+  const { visual, label } = video.dataset;
+  host.querySelectorAll('.demo-label').forEach(n => n.remove());
+  video.outerHTML = demoMarkup(visual, label, false);
+}, true);
 
 /* ------------------------------------------------------------
    Навигация
@@ -526,7 +545,7 @@ function renderLibrary() {
   LESSONS.forEach((l, li) => l.exercises.forEach(e => { if (!seen.has(e.name)) seen.set(e.name, { e, lessons: [] }); seen.get(e.name).lessons.push(li + 1); }));
   $('#libraryList').innerHTML = [...seen.values()].map(({ e, lessons }) => {
     const pos = POSITIONS[e.pos] || POSITIONS.stand;
-    return `<div class="lib"><div class="pic">${demoMarkup(e.visual, pos.label).replace(/<div class="demo-label">.*?<\/div>/, '')}</div>
+    return `<div class="lib"><div class="pic">${demoMarkup(e.visual, pos.label, false).replace(/<div class="demo-label">.*?<\/div>/, '')}</div>
       <div><b>${esc(e.name)}</b><small>${esc(e.how)}</small><span class="tag">${pos.icon} ${esc(pos.label)} · миссии ${lessons.join(', ')}</span></div></div>`;
   }).join('');
 }

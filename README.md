@@ -17,7 +17,10 @@
 | `app.js` | логика: состояние, таймер, звук/голос, награды, родительский раздел, SVG-фигурки |
 | `sw.js`, `manifest.webmanifest`, `icons/` | PWA |
 | `assets/` | картинки: референсы (`art`), позы демонстратора (`poses`), Рико (`rico`), сцены (`scenes`) |
-| `tools/e2e.js` | автотест на Playwright со скриншотами |
+| `assets/video/` | ролики-демонстрации (`<visual>.mp4` + `.webm`), карта `POSE_VIDEOS` в `data.js` |
+| `docs/prompts/` | промпты и итоги генерации роликов (README — схема и статус по 24 упражнениям) |
+| `tools/e2e.js` | автотест на Playwright со скриншотами (`PW_MODULE`, `PW_EXEC` — путь к playwright и Chromium) |
+| `tools/encode-video.sh` | сжатие ролика в mp4 + webm для приложения (нужен ffmpeg) |
 | `tools/crop.js`, `tools/unbg.js` | обрезка картинок и удаление фона через Chromium |
 | `docs/ANALYSIS.md` | разбор исходного MVP и список изменений |
 | `docs/ROADMAP_ANDROID.md` | план перехода к Android-приложению |
