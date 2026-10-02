@@ -78,3 +78,17 @@ ends in neutral standing pose, feet together».
 
 Сохранить как `assets/video/walk.mp4` (H.264, ≤ 1 МБ) и `assets/video/walk.webm` (VP9), затем
 прописать `walk` в `POSE_VIDEOS` (data.js) — см. `docs/VIDEO_PIPELINE.md`.
+
+## Итог отладки (02.10.2026, Grok Imagine Video 1.5 через MCP `grok-imagine`)
+
+Принят вариант 2 (SSIM первого и последнего кадра 0,977). Что выяснили, это правила для всех следующих роликов:
+
+1. **Пропорции берутся из стартового кадра, а не из `aspect_ratio`.** С `boy-front34.png` (720×900) вышло 848×1072 (4:5). Решение: достроить фон до 4:3 (`assets/art/boy-front34-43.png`, 1200×900):
+   `ffmpeg -i boy-front34.png -vf "pad=1200:900:240:0,fillborders=left=240:right=240:mode=smear" boy-front34-43.png`
+2. **Петля**: один и тот же кадр передаётся и как `image`, и как `last_frame`. Без этого конец ролика стоял в другой позе (SSIM 0,85).
+3. В промпт добавлено «body stays turned the same three-quarter way, does not drift sideways, starts and ends in exactly the same standing pose as the first frame».
+4. Поля негативного промпта в API нет, поэтому он дописан в конец основного промпта строкой `Avoid: …`.
+5. Параметры вызова: `duration=5`, `resolution=720p`, `generate_audio=false`. Сервер стоимость не отдаёт.
+6. Сжатие для приложения (960×720, без звука, 24 к/с):
+   `ffmpeg -i in.mp4 -an -c:v libx264 -profile:v main -pix_fmt yuv420p -crf 28 -preset slow -movflags +faststart walk.mp4` (260 КБ)
+   `ffmpeg -i in.mp4 -an -c:v libvpx-vp9 -b:v 0 -crf 36 -row-mt 1 -pix_fmt yuv420p walk.webm` (329 КБ)
