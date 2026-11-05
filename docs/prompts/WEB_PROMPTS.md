@@ -41,3 +41,48 @@ The boy rests on his back on the blue mat, knees bent, feet flat, and his whole 
 
 ## chin — отклонено дважды
 Обе версии («glides his chin back», «head only slides horizontally, never tilts») давали запрокидывание головы назад. Показ ребёнку такого движения недопустим, поэтому ролика нет.
+
+---
+
+# Режим референсов (веб, с 05.11.2026)
+
+Вызов: `grok_generate_video` (MCP `grok-imagine-xai`), `image_paths` = [`assets/art/sheet-character.png`, ракурс], `aspect_ratio` 3:2, `resolution` 720p, `generate_audio=false`.
+Ракурс: `boy-side-right.png` для вида сбоку, `boy-front.png` для вида спереди. Драйвер ставит задаче `failed` на середине генерации (см. README), ролики забирать из Библиотеки.
+
+Начало каждого промпта: *«The same 3D-stylized cartoon boy as in @Image 1 and @Image 2, identical character design: wavy brown hair, big brown eyes, teal athletic t-shirt with white seams, navy shorts over navy calf-length leggings, white-and-grey sneakers with teal accents.»*
+Хвост каждого промпта: *«The video ends in exactly the same pose as the first frame. Whole body (and the chair) always in frame. Plain light sky-blue studio background, soft even lighting. Static camera, no zoom, no pan, no cuts, no text, no extra characters. Avoid: camera movement, fast motion, changing clothes or hair, different character.»* (плюс запреты под упражнение).
+
+## squat — сбоку, 6 с
+Side view, he faces right, exactly like @Image 2. A simple wooden chair stands right behind him, its seat edge just behind his hips. He starts standing tall, both arms held straight forward at shoulder height for balance; his arms stay in that position the whole time and never move. Slowly he moves his hips back and bends his knees a little until his bottom lightly touches the edge of the chair seat, then smoothly stands up again to the tall posture. Back stays straight, chest open, head level, feet planted and never move. He never sits down on the seat and never leans on the chair. One slow repetition takes about 6 seconds.
+
+## bird — сбоку, 10 с, обрезан до 5,96 с
+Side view, his head points to the right. He is on all fours on a blue exercise mat, hands under shoulders, knees under hips, back flat, head in line with the spine. Slowly he stretches one arm straight forward and the opposite leg straight back until they form one line with his back, holds for a moment, and returns to all fours. Then he does the same with the other arm and the other leg, and returns to all fours. His back stays flat and level the whole time, it never sags or arches, hips never tilt, head never lifts. Slow and controlled, about 5 seconds per side.
+*(вторая сторона в обоих вариантах не возвращалась в исходную позу, поэтому оставлена первая: `ffmpeg -t 5.96`)*
+
+## cat — сбоку, 6 с
+Side view, his head points to the right. He is on all fours on a blue exercise mat, hands under shoulders, knees under hips, back flat and neutral. Slowly, as if exhaling, he gently rounds his back upward like a cat and lets his head drop a little, then smoothly returns to the flat neutral back. His back never sags or arches downward, his head never lifts up, hands and knees never move. One slow repetition takes about 6 seconds.
+
+## rotate — спереди, 10 с
+Front view, facing the camera. He sits upright on a simple wooden chair, feet flat on the floor, knees together, arms crossed on his chest. Slowly he turns his chest a little to his right, returns to the centre, turns a little to his left, and returns to the centre. Only the chest turns, small comfortable range; his pelvis, knees and feet always face the camera and never move, his arms stay crossed on his chest, head turns together with the chest and never tilts. About 4 seconds per side.
+
+## wallpush — сбоку, 6 с
+Side view. A plain pale wall stands on the right side of the frame. He faces the wall, standing a bit more than an arm's length from it, palms flat on the wall at chest height, arms straight. Slowly he bends his elbows and leans his whole body towards the wall as one straight line from head to heels, then gently pushes back to straight arms. His heels stay flat on the floor and never lift, his feet never move, his hips never sag or stick out, head stays in line with his body. One slow repetition takes about 6 seconds.
+
+## balance — спереди, 6 с (2-я попытка)
+Front view, facing the camera. He stands upright next to a simple wooden chair placed at his left side, and lightly rests the fingertips of his left hand on the top of its backrest; his right arm hangs relaxed. Slowly he lifts his right foot just a few centimetres off the floor, holds it there for a moment, then slowly puts it back down. The lift is small, the knee bends only a little. He stays in exactly the same place in the frame the whole time and never steps, sways or slides sideways; the chair never moves; body upright, hips level, calm face. One slow repetition takes about 6 seconds.
+*(1-я попытка без «stays in exactly the same place»: фигура съезжала по кадру, SSIM 0,88)*
+
+## abduction — спереди, 6 с
+Front view, facing the camera. He stands upright next to a simple wooden chair that is at his side, and lightly holds the top of its backrest with the fingertips of the nearer hand; the other arm hangs relaxed. Slowly he lifts the straight leg farther from the chair a little out to the side, only a small distance, holds for a moment, then slowly lowers it back beside the other foot. His torso stays upright and never leans, pelvis level and never turns, toes point forward, standing knee soft. He never lets go of the chair and the chair never moves. One slow repetition takes about 6 seconds.
+
+## sit — сбоку, 6 с
+Side view, he faces right. He sits upright on a simple wooden chair, feet flat on the floor, knees at right angles, hands resting on his thighs. Slowly, with a calm breath, he grows a little taller through the crown of his head, shoulders relaxed and down, then settles back into a comfortable upright seat. The movement is small. His hands stay on his thighs and never move, feet never move, chin stays level and his head never tilts back or forward, he never stands up. One slow repetition takes about 6 seconds.
+
+## sitstand — сбоку, 10 с
+Side view, he faces right. He sits upright on a simple wooden chair, feet flat on the floor, both arms held straight forward at shoulder height; his arms stay in that position the whole time. Slowly and smoothly he stands up to full height without pushing off with his hands and without any jerk, back straight, knees over his feet, then slowly and with control sits back down onto the chair. His feet never move, the chair never moves, he never drops onto the seat. About 4 seconds up and 4 seconds down.
+
+## calf — сбоку, 6 с
+Side view. A plain pale wall stands on the right side of the frame. He faces the wall with both palms on it at chest height. One leg is stepped back, straight, with its heel flat on the floor; the front knee is bent. Slowly he shifts his weight a little forward towards the wall, holds for a moment, then shifts back. The movement is small. The back heel stays flat on the floor and never lifts, his feet never move, his hands stay on the wall, back straight. One slow repetition takes about 6 seconds.
+
+## stretch — отклонено трижды
+1-я попытка: обе ноги прямые, в наклоне круглая спина и опущенная голова. 2-я и 3-я (добавлено «Only ONE leg is straight… back perfectly straight like a board… eyes looking forward»): спина прямая, но обе ноги всё равно прямые, петля 0,88–0,90. Ролика нет, показывается схема.

@@ -336,6 +336,16 @@ const POSE_VIDEOS = {
   wallslide: 'assets/video/wallslide.mp4',
   armsup: 'assets/video/armsup.mp4',
   wall: 'assets/video/wall.mp4',
+  bird: 'assets/video/bird.mp4',
+  cat: 'assets/video/cat.mp4',
+  squat: 'assets/video/squat.mp4',
+  rotate: 'assets/video/rotate.mp4',
+  wallpush: 'assets/video/wallpush.mp4',
+  balance: 'assets/video/balance.mp4',
+  abduction: 'assets/video/abduction.mp4',
+  sit: 'assets/video/sit.mp4',
+  sitstand: 'assets/video/sitstand.mp4',
+  calf: 'assets/video/calf.mp4',
 };
 
 // Уровни героя (опыт копится за каждое упражнение и миссию)
